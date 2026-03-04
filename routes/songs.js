@@ -33,19 +33,26 @@ router.get('/:id', (req, res) => {
 
 // GET /songs?q=searchTerm - Search songs by title or artist
 router.get('/', (req, res) => {
-  const q = (req.query.q || '').toString().trim().toLocaleLowerCase();
+  const q = (req.query.q || '').toLocaleLowerCase();
+  const artistQuery = (req.query.artist || '').toLocaleLowerCase();
 
-  if (!q) {
-    return res.json(songs);
+  if (!q && !artistQuery) {
+    res.json(songs);
   }
+  let result = songs;
 
-  const filteredSongs = songs.filter((s) => {
-    const title = (s.title || '').toLocaleLowerCase();
-    const artist = (s.artist || '').toLocaleLowerCase();
-    return title.includes(q) || artist.includes(q);
-  });
-
-  return res.json(filteredSongs);
+  if (q) {
+    result = result.filter((s) => {
+      return s.title.toLocaleLowerCase().includes(q) || s
+      .artist.toLocaleLowerCase().includes(artistQuery);
+    });
+  }
+  if (artistQuery) {
+    result = result.filter((s) => 
+      s.artist.toLocaleLowerCase() === artistQuery
+    );
+  }
+  res.json(result);
 });
 
 // POST /songs - Create a new song
