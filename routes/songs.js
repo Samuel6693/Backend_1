@@ -16,7 +16,7 @@ router.get('/', (req, res) => {
 
 // GET /songs/:id - Get a specific song by ID
 router.get('/:id', (req, res) => {
-  const id = Number(req.params.id);
+  const id = Number(req.params.id);z
 
   if (Number.isNaN(id)) {
     return res.status(400).json({ error: 'id must be a number' });
@@ -29,6 +29,23 @@ router.get('/:id', (req, res) => {
   }
 
   res.json(song);
+});
+
+// GET /songs?q=searchTerm - Search songs by title or artist
+router.get('/', (req, res) => {
+  const q = (req.query.q || '').toString().trim().toLocaleLowerCase();
+
+  if (!q) {
+    return res.json(songs);
+  }
+
+  const filteredSongs = songs.filter((s) => {
+    const title = (s.title || '').toLocaleLowerCase();
+    const artist = (s.artist || '').toLocaleLowerCase();
+    return title.includes(q) || artist.includes(q);
+  });
+
+  return res.json(filteredSongs);
 });
 
 // POST /songs - Create a new song
