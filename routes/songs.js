@@ -55,6 +55,19 @@ router.get('/', (req, res) => {
   res.json(result);
 });
 
+// GET /songs?sort=title - Sort songs by title or artist
+  const sort = req.query.sort;
+
+if (sort) {
+  if (sort !== 'title' && sort !== 'artist') {
+    return res.status(400).json({ error: 'invalid sort field' });
+  }
+
+  result = result.sort((a, b) =>
+    a[sort].localeCompare(b[sort], 'sv')
+  );
+}
+
 // POST /songs - Create a new song
 router.post('/', (req, res) => {
   const { title, artist } = req.body;
