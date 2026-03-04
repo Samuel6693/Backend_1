@@ -9,14 +9,55 @@ let songs = [
   { id: 3, title: 'Titi Me Pregunto', artist: 'Bad Bunny' },
 ];
 
-// GET /songs - Get all songs
+// GET /songs - list + search/filter/sort/limit
 router.get('/', (req, res) => {
-  res.json(songs);
+  const q = (req.query.q || '').toString().trim().toLowerCase();
+  const artistQuery = (req.query.artist || '').toString().trim().toLowerCase();
+  const sort = req.query.sort;
+  const limitRaw = req.query.limit;
+
+  let result = songs;
+
+  // A1: q (contains in title OR artist, case-insensitive)
+  if (q) {
+    result = result.filter((s) =>
+      (s.title || '').toLowerCase().includes(q) ||
+      (s.artist || '').toLowerCase().includes(q)
+    );
+  }
+
+  // A2: artist (exact match, case-insensitive)
+  if (artistQuery) {
+    result = result.filter((s) =>
+      (s.artist || '').toLowerCase() === artistQuery
+    );
+  }
+
+  // A3: sort (only title or artist)
+  if (sort !== undefined) {
+    if (sort !== 'title' && sort !== 'artist') {
+      return res.status(400).json({ error: 'invalid sort field' });
+    }
+    result = [...result].sort((a, b) =>
+      (a[sort] || '').localeCompare((b[sort] || ''), 'sv')
+    );
+  }
+
+  // A4: limit (positive integer)
+  if (limitRaw !== undefined) {
+    const limit = Number(limitRaw);
+    if (!Number.isInteger(limit) || limit < 1) {
+      return res.status(400).json({ error: 'limit must be a positive integer' });
+    }
+    result = result.slice(0, limit);
+  }
+
+  return res.json(result);
 });
 
-// GET /songs/:id - Get a specific song by ID
+// GET /songs/:id - get one song by id
 router.get('/:id', (req, res) => {
-  const id = Number(req.params.id);z
+  const id = Number(req.params.id);
 
   if (Number.isNaN(id)) {
     return res.status(400).json({ error: 'id must be a number' });
@@ -28,45 +69,8 @@ router.get('/:id', (req, res) => {
     return res.status(404).json({ error: 'Song not found' });
   }
 
-  res.json(song);
+  return res.json(song);
 });
-
-// GET /songs?q=searchTerm - Search songs by title or artist
-router.get('/', (req, res) => {
-  const q = (req.query.q || '').toLocaleLowerCase();
-  const artistQuery = (req.query.artist || '').toLocaleLowerCase();
-
-  if (!q && !artistQuery) {
-    res.json(songs);
-  }
-  let result = songs;
-
-  if (q) {
-    result = result.filter((s) => {
-      return s.title.toLocaleLowerCase().includes(q) || s
-      .artist.toLocaleLowerCase().includes(artistQuery);
-    });
-  }
-  if (artistQuery) {
-    result = result.filter((s) => 
-      s.artist.toLocaleLowerCase() === artistQuery
-    );
-  }
-  res.json(result);
-});
-
-// GET /songs?sort=title - Sort songs by title or artist
-  const sort = req.query.sort;
-
-if (sort) {
-  if (sort !== 'title' && sort !== 'artist') {
-    return res.status(400).json({ error: 'invalid sort field' });
-  }
-
-  result = result.sort((a, b) =>
-    a[sort].localeCompare(b[sort], 'sv')
-  );
-}
 
 // POST /songs - Create a new song
 router.post('/', (req, res) => {
