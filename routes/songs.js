@@ -9,41 +9,44 @@ let songs = [
   { id: 3, title: 'Titi Me Pregunto', artist: 'Bad Bunny' },
 ];
 
-// GET /songs - list + search/filter/sort/limit
+// GET /songs - list + filter + sort + limit (A1–A5)
 router.get('/', (req, res) => {
-  const q = (req.query.q || '').toString().trim().toLowerCase();
   const artistQuery = (req.query.artist || '').toString().trim().toLowerCase();
+  const q = (req.query.q || '').toString().trim().toLowerCase();
   const sort = req.query.sort;
   const limitRaw = req.query.limit;
 
   let result = songs;
 
-  // A1: q (contains in title OR artist, case-insensitive)
-  if (q) {
-    result = result.filter((s) =>
-      (s.title || '').toLowerCase().includes(q) ||
-      (s.artist || '').toLowerCase().includes(q)
-    );
-  }
-
-  // A2: artist (exact match, case-insensitive)
+  // 1) Filter: artist (case-insensitive exact match)
   if (artistQuery) {
-    result = result.filter((s) =>
-      (s.artist || '').toLowerCase() === artistQuery
+    result = result.filter(
+      (s) => (s.artist || '').toLowerCase() === artistQuery
     );
   }
 
-  // A3: sort (only title or artist)
+  // 2) Filter: q (case-insensitive contains in title OR artist)
+  if (q) {
+    result = result.filter(
+      (s) =>
+        (s.title || '').toLowerCase().includes(q) ||
+        (s.artist || '').toLowerCase().includes(q)
+    );
+  }
+
+  // 3) Sort: only title or artist
   if (sort !== undefined) {
     if (sort !== 'title' && sort !== 'artist') {
       return res.status(400).json({ error: 'invalid sort field' });
     }
+
+    // copy to avoid mutating original array
     result = [...result].sort((a, b) =>
       (a[sort] || '').localeCompare((b[sort] || ''), 'sv')
     );
   }
 
-  // A4: limit (positive integer)
+  // 4) Limit: positive integer
   if (limitRaw !== undefined) {
     const limit = Number(limitRaw);
     if (!Number.isInteger(limit) || limit < 1) {
@@ -53,23 +56,6 @@ router.get('/', (req, res) => {
   }
 
   return res.json(result);
-});
-
-// GET /songs/:id - get one song by id
-router.get('/:id', (req, res) => {
-  const id = Number(req.params.id);
-
-  if (Number.isNaN(id)) {
-    return res.status(400).json({ error: 'id must be a number' });
-  }
-
-  const song = songs.find((s) => s.id === id);
-
-  if (!song) {
-    return res.status(404).json({ error: 'Song not found' });
-  }
-
-  return res.json(song);
 });
 
 // POST /songs - Create a new song
